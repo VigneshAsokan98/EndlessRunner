@@ -19,6 +19,7 @@ class CAudio;
 class CCatmullRom;
 class CCarShape;
 class CPentagonPyramid;
+class CPlayer;
 
 class Game {
 private:
@@ -29,7 +30,6 @@ private:
 
 	// Pointers to game objects.  They will get allocated in Game::Initialise()
 	CSkybox *m_pSkybox;
-	CCamera *m_pCamera;
 	vector <CShaderProgram *> *m_pShaderPrograms;
 	CPlane *m_pPlanarTerrain;
 	CFreeTypeFont *m_pFtFont;
@@ -38,9 +38,10 @@ private:
 	CSphere *m_pSphere;
 	CHighResolutionTimer *m_pHighResolutionTimer;
 	CAudio *m_pAudio;
-	CCatmullRom* m_pCatmullRom;
+	CCatmullRom* m_pSpline;
 	CCarShape* m_pCar;
 	CPentagonPyramid* m_pPyramid;
+	CPlayer* m_pPlayer;
 
 	// Some other member variables
 	double m_dt;
@@ -56,6 +57,8 @@ public:
 	void SetHinstance(HINSTANCE hinstance);
 	WPARAM Execute();
 
+	CCamera* m_pCamera;
+
 private:
 	static const int FPS = 60;
 	void DisplayFrameRate();
@@ -65,6 +68,7 @@ private:
 	int m_frameCount;
 	double m_elapsedTime;
 	float m_currentDistance;
+	glm::mat4 m_PlayerOrientation;
 
 
 };

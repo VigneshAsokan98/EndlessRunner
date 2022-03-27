@@ -44,6 +44,7 @@ Source code drawn from a number of sources and examples, including contributions
 #include "CatmullRom.h"
 #include "CarShape.h"
 #include "Pentagon_pyramid.h"
+#include "Player.h"
 
 // Constructor
 Game::Game()
@@ -58,9 +59,10 @@ Game::Game()
 	m_pSphere = NULL;
 	m_pHighResolutionTimer = NULL;
 	m_pAudio = NULL; 
-	m_pCatmullRom = NULL;
+	m_pSpline = NULL;
 	m_pCar = NULL;
 	m_pPyramid = NULL;
+	m_pPlayer = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -80,9 +82,10 @@ Game::~Game()
 	delete m_pHorseMesh;
 	delete m_pSphere;
 	delete m_pAudio;
-	delete m_pCatmullRom;
+	delete m_pSpline;
 	delete m_pCar;
 	delete m_pPyramid;
+	delete m_pPlayer;
 
 	if (m_pShaderPrograms != NULL) {
 		for (unsigned int i = 0; i < m_pShaderPrograms->size(); i++)
@@ -111,9 +114,10 @@ void Game::Initialise()
 	m_pHorseMesh = new COpenAssetImportMesh;
 	m_pSphere = new CSphere;
 	m_pAudio = new CAudio;
-	m_pCatmullRom = new CCatmullRom;
+	m_pSpline = new CCatmullRom;
 	m_pCar = new CCarShape;
 	m_pPyramid = new CPentagonPyramid;
+	m_pPlayer = new CPlayer;
 	m_currentDistance = 0.f;
 
 	RECT dimensions = m_gameWindow.GetDimensions();
@@ -193,19 +197,21 @@ void Game::Initialise()
 	glEnable(GL_CULL_FACE);
 
 	// Initialise audio and play background music
-	m_pAudio->Initialise();
-	m_pAudio->LoadEventSound("resources\\Audio\\Boing.wav");					// Royalty free sound from freesound.org
-	m_pAudio->LoadMusicStream("resources\\Audio\\DST-Garote.mp3");	// Royalty free music from http://www.nosoapradio.us/
-	m_pAudio->PlayMusicStream();
+	//m_pAudio->Initialise();
+	//m_pAudio->LoadEventSound("resources\\Audio\\Boing.wav");					// Royalty free sound from freesound.org
+	//m_pAudio->LoadMusicStream("resources\\Audio\\DST-Garote.mp3");	// Royalty free music from http://www.nosoapradio.us/
+	//m_pAudio->PlayMusicStream();
 
 	//Create Spline
-	m_pCatmullRom->CreateCentreline();
-	m_pCatmullRom->CreateOffsetCurves();
-	m_pCatmullRom->CreateTrack();
+	m_pSpline->CreateCentreline("resources\\textures\\Toon_Road_Texture.png");
+	m_pSpline->CreateOffsetCurves();
+	m_pSpline->CreateTrack();
 
 	//Create Primitive Objects
 	m_pCar->CreateCar();
 	m_pPyramid->Create();
+
+	m_pPlayer->Init(m_pSpline);
 }
 
 // Render method runs repeatedly in a loop
@@ -264,52 +270,23 @@ void Game::Render()
 		pMainProgram->SetUniform("renderSkybox", false);
 	modelViewMatrixStack.Pop();
 
-	// Render the planar terrain
-	modelViewMatrixStack.Push();
-		pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-		pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-		m_pPlanarTerrain->Render();
-	modelViewMatrixStack.Pop();
-
-
 	// Turn on diffuse + specular materials
 	pMainProgram->SetUniform("material1.Ma", glm::vec3(0.5f));	// Ambient material reflectance
 	pMainProgram->SetUniform("material1.Md", glm::vec3(0.5f));	// Diffuse material reflectance
 	pMainProgram->SetUniform("material1.Ms", glm::vec3(1.0f));	// Specular material reflectance	
 
-
-	// Render the horse 
-	modelViewMatrixStack.Push();
-		modelViewMatrixStack.Translate(glm::vec3(0.0f, 0.0f, 0.0f));
-		modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 180.0f);
-		modelViewMatrixStack.Scale(2.5f);
-		pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-		pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-		//m_pHorseMesh->Render();
-	modelViewMatrixStack.Pop();
-
-	
-	// Render the barrel 
-	modelViewMatrixStack.Push();
-	glm::vec3 p;
-	m_pCatmullRom->Sample(m_currentDistance, p);
-		modelViewMatrixStack.Translate(p);
-		modelViewMatrixStack.Scale(5.0f);
-		pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-		pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-		m_pBarrelMesh->Render();
-	modelViewMatrixStack.Pop();
-
-	// Render the sphere
-	modelViewMatrixStack.Push();
-		modelViewMatrixStack.Translate(glm::vec3(0.0f, 2.0f, 150.0f));
-		modelViewMatrixStack.Scale(2.0f);
-		pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-		pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-		// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-		//pMainProgram->SetUniform("bUseTexture", false);
-		m_pSphere->Render();
-	modelViewMatrixStack.Pop();
+	//// Render the sphere
+	//modelViewMatrixStack.Push();
+	//glm::vec3 p;
+	//m_pSpline->Sample(m_currentDistance + 10.f, p);
+	//	modelViewMatrixStack.Translate(p);
+	//	modelViewMatrixStack.Scale(2.0f);
+	//	pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+	//	pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+	//	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
+	//	//pMainProgram->SetUniform("bUseTexture", false);
+	//	m_pSphere->Render();
+	//modelViewMatrixStack.Pop();
 
 
 	//Use of Object Shader
@@ -321,20 +298,25 @@ void Game::Render()
 	pObjectShader->SetUniform("matrices.projMatrix", m_pCamera->GetPerspectiveProjectionMatrix());
 
 	// Render the Car
-	modelViewMatrixStack.Push();
-	modelViewMatrixStack.Translate(glm::vec3(0, 0, 0));
-	modelViewMatrixStack.Scale(5.0f);
-	pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-	pObjectShader->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-	//pMainProgram->SetUniform("bUseTexture", false);
-	m_pCar->Render();
-	modelViewMatrixStack.Pop();
+	m_pPlayer->Render(modelViewMatrixStack, pObjectShader, m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+	//modelViewMatrixStack.Push();
+	//glm::vec3 p;
+	//m_pSpline->Sample(m_currentDistance + 10.f, p);
+	//modelViewMatrixStack.Translate(p);
+	//modelViewMatrixStack *= m_PlayerOrientation;
+	//modelViewMatrixStack.Rotate(glm::vec3(0, 1, 0), -1.7f);
+	//modelViewMatrixStack.Scale(2.0f);
+	//pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+	//pObjectShader->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+	//// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
+	////pMainProgram->SetUniform("bUseTexture", false);
+	//m_pCar->Render();
+	//modelViewMatrixStack.Pop();
 
 	// Render the Pyramid
 	modelViewMatrixStack.Push();
-	modelViewMatrixStack.Translate(glm::vec3(20, 10, 20));
-	modelViewMatrixStack.Scale(5.0f);
+	modelViewMatrixStack.Translate(glm::vec3(0,0,0));
+	modelViewMatrixStack.Scale(1.0f);
 	pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
 	pObjectShader->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
 	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
@@ -344,45 +326,35 @@ void Game::Render()
 
 	// Render the Spline 
 	modelViewMatrixStack.Push();
-	pMainProgram->SetUniform("bUseTexture", false); // turn off texturing
+	pObjectShader->SetUniform("bUseTexture", true); // turn off texturing
 	pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
 	pObjectShader->SetUniform("matrices.normalMatrix",
 		m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-	m_pCatmullRom->RenderCentreline();
-	m_pCatmullRom->RenderOffsetCurves();
-	m_pCatmullRom->RenderTrack();
+	/*m_pSpline->RenderCentreline();
+	m_pSpline->RenderOffsetCurves();*/
+	m_pSpline->RenderTrack();
 	// Render your object here
 	modelViewMatrixStack.Pop();
 	// Draw the 2D graphics after the 3D graphics
 	DisplayFrameRate();
 
 	// Swap buffers to show the rendered image
-	SwapBuffers(m_gameWindow.Hdc());		
+	SwapBuffers(m_gameWindow.Hdc());		  
 
 }
 
 // Update method runs repeatedly with the Render method
-void Game::Update() 
+void Game::Update()
 {
 	// Update the camera using the amount of time that has elapsed to avoid framerate dependent motion
 	//m_pCamera->Update(m_dt);
-	m_currentDistance += m_dt * 0.1f * 2.f;
-	//Move Camera in Circular path
-	static float _t = 0;
-	_t += .001 * m_dt;
-	float offset = 75.0f;
+	m_currentDistance += m_dt * 0.01f * 2.f;
 
-	glm::vec3 xAxis = glm::vec3(1, 0, 0);
-	glm::vec3 yAxis = glm::vec3(0, 1, 0);
-	glm::vec3 zAxis = glm::vec3(0, 0, 1);
-	glm::vec3 cameraPos = offset * cos(_t) * xAxis + 50.0f * yAxis + offset * sin(_t) * zAxis;
+	m_pPlayer->Update(m_dt);
+	glm::vec3 playerPos = m_pPlayer->GetPosition();
+	glm::mat3 TNB = m_pPlayer->GetTNBFrame();
 
-	glm::vec3 T = glm::normalize(-sin(_t) * xAxis + cos(_t) * zAxis);
-	glm::vec3 N = glm::normalize(glm::cross(T, yAxis));
-	glm::vec3 B = glm::normalize(glm::cross(N, T));
-
-	m_pCamera->Set(cameraPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-
+	m_pCamera->Set(playerPos + TNB[2] * 10.f - TNB[1] * 20.f, playerPos, glm::vec3(0, 1, 0));
 	m_pAudio->Update();
 }
 
@@ -390,7 +362,6 @@ void Game::Update()
 
 void Game::DisplayFrameRate()
 {
-
 
 	CShaderProgram *fontProgram = (*m_pShaderPrograms)[1];
 
@@ -527,6 +498,18 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
 			break;
 		case VK_F1:
 			m_pAudio->PlayEventSound();
+			break; 
+		case VK_RIGHT:
+			m_pPlayer->MovePlayer(PlayerLane::Right);
+			break;
+		case VK_LEFT:
+			m_pPlayer->MovePlayer(PlayerLane::Left);
+			break;
+		case 'D':
+			m_pPlayer->MovePlayer(PlayerLane::Right);
+			break;
+		case 'A':
+			m_pPlayer->MovePlayer(PlayerLane::Left);
 			break;
 		}
 		break;

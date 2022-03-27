@@ -11,7 +11,7 @@ public:
 	CCatmullRom();
 	~CCatmullRom();
 
-	void CreateCentreline();
+	void CreateCentreline(string _textureName);
 	void RenderCentreline();
 
 	void CreateOffsetCurves();
@@ -21,10 +21,11 @@ public:
 	void RenderTrack();
 
 	void CreateVBO(vector<glm::vec3> points);
+	void CreatetrackVBO(vector<glm::vec3> points);
 
 	int CurrentLap(float d); // Return the currvent lap (starting from 0) based on distance along the control curve.
 
-	bool Sample(float d, glm::vec3 &p, glm::vec3 &up = _dummy_vector); // Return a point on the centreline based on a certain distance along the control curve.
+	bool Sample(float d, glm::vec3 &p, float lane, glm::vec3 &up = _dummy_vector); // Return a point on the centreline based on a certain distance along the control curve.
 
 private:
 
@@ -43,14 +44,14 @@ private:
 	GLuint m_vaoTrack;
 
 	static glm::vec3 _dummy_vector;
-	vector<glm::vec3> m_controlPoints;		// Control points, which are interpolated to produce the centreline points
-	vector<glm::vec3> m_controlUpVectors;	// Control upvectors, which are interpolated to produce the centreline upvectors
-	vector<glm::vec3> m_centrelinePoints;	// Centreline points
-	vector<glm::vec3> m_centrelineUpVectors;// Centreline upvectors
+	vector<glm::vec3> m_controlPoints;				// Control points, which are interpolated to produce the centreline points
+	vector<glm::vec3> m_controlUpVectors;			// Control upvectors, which are interpolated to produce the centreline upvectors
+	vector<glm::vec3> m_centrelinePoints;			// Centreline points
+	vector<glm::vec3> m_centrelineUpVectors;		// Centreline upvectors
 
-	vector<glm::vec3> m_leftOffsetPoints;	// Left offset curve points
-	vector<glm::vec3> m_rightOffsetPoints;	// Right offset curve points
+	vector<glm::vec3> m_leftOffsetPoints;			// Left offset curve points
+	vector<glm::vec3> m_rightOffsetPoints;			// Right offset curve points
 
 
-	unsigned int m_vertexCount;				// Number of vertices in the track VBO
+	unsigned int m_vertexCount;						// Number of vertices in the track VBO
 };
