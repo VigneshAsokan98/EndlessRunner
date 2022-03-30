@@ -211,7 +211,7 @@ void Game::Initialise()
 	m_pCar->CreateCar();
 	m_pPyramid->Create();
 
-	m_pPlayer->Init(m_pSpline);
+	m_pPlayer->Init(m_pSpline, m_pSkybox->GetCubeMap());
 }
 
 // Render method runs repeatedly in a loop
@@ -294,11 +294,12 @@ void Game::Render()
 	pObjectShader->UseProgram();
 	pObjectShader->SetUniform("sampler0", 0);
 	pObjectShader->SetUniform("bUseTexture", true);
-
+	pObjectShader->SetUniform("CubeMapTex", cubeMapTextureUnit);
 	pObjectShader->SetUniform("matrices.projMatrix", m_pCamera->GetPerspectiveProjectionMatrix());
-
+	
 	// Render the Car
-	m_pPlayer->Render(modelViewMatrixStack, pObjectShader, m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+	m_pPlayer->Render(modelViewMatrixStack, pObjectShader, m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()),m_pCamera->GetPosition(), m_pCamera->GetViewMatrix());
+	
 	//modelViewMatrixStack.Push();
 	//glm::vec3 p;
 	//m_pSpline->Sample(m_currentDistance + 10.f, p);
@@ -330,6 +331,7 @@ void Game::Render()
 	pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
 	pObjectShader->SetUniform("matrices.normalMatrix",
 		m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+	pObjectShader->SetUniform("ReflectFactor", 0.05f);
 	/*m_pSpline->RenderCentreline();
 	m_pSpline->RenderOffsetCurves();*/
 	m_pSpline->RenderTrack();

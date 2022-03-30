@@ -56,10 +56,10 @@ public:
 	LRESULT ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_param);
 	void SetHinstance(HINSTANCE hinstance);
 	WPARAM Execute();
-
-	CCamera* m_pCamera;
+	CCamera* GetCamera() { return m_pCamera; }
 
 private:
+	CCamera* m_pCamera;
 	static const int FPS = 60;
 	void DisplayFrameRate();
 	void GameLoop();

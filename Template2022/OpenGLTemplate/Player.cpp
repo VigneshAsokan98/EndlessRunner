@@ -3,6 +3,7 @@
 #include "Shaders.h"
 #include "OpenAssetImportMesh.h"
 #include "Game.h"
+#include "Cubemap.h"
 
 CPlayer::CPlayer()
 {
@@ -12,11 +13,16 @@ CPlayer::~CPlayer()
 {
 
 }
-void CPlayer::Init(CCatmullRom *_spline)
+void CPlayer::Init(CCatmullRom *_spline, CCubemap _reflectionMap)
 {
 	m_pSpline = _spline;
+	
+	//m_reflectionCubeMap = _reflectionMap;
+
 	m_pModel = new COpenAssetImportMesh;
 	m_pModel->Load("resources\\models\\Player\\sls_amg.obj");
+
+
 }
 
 void CPlayer::Update(double dt)
@@ -65,7 +71,7 @@ void CPlayer::MovePlayer(PlayerLane _lane)
 
 	m_timer = 0.f;
 }
-void CPlayer::Render(glutil::MatrixStack& _modelViewMatrixStack, CShaderProgram* _shader, glm::mat3 _normalMatrix)
+void CPlayer::Render(glutil::MatrixStack& _modelViewMatrixStack, CShaderProgram* _shader, glm::mat3 _normalMatrix, glm::vec3 _cameraPos, glm::mat4 _viewMat)
 {
 	_modelViewMatrixStack.Push();
 	_modelViewMatrixStack.Translate(m_playerPosition);
@@ -73,6 +79,10 @@ void CPlayer::Render(glutil::MatrixStack& _modelViewMatrixStack, CShaderProgram*
 	_modelViewMatrixStack.Scale(1.0f);
 	_shader->SetUniform("matrices.modelViewMatrix", _modelViewMatrixStack.Top());
 	_shader->SetUniform("matrices.normalMatrix", _normalMatrix);
+	_shader->SetUniform("ReflectFactor", 0.5f);
+	_shader->SetUniform("WorldCameraPosition", _cameraPos);
+	glm::mat4 inverseViewMatrix = glm::inverse(_viewMat);
+	_shader->SetUniform("matrices.inverseViewMatrix", inverseViewMatrix);
 	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
 	//pMainProgram->SetUniform("bUseTexture", false);
 	m_pModel->Render();

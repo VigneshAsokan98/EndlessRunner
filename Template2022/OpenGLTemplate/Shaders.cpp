@@ -34,7 +34,7 @@ bool CShader::LoadShader(string sFile, int iType)
 	delete[] sProgram;
 
 	int iCompilationStatus;
-	glGetShaderiv(m_uiShader, GL_COMPILE_STATUS, &iCompilationStatus);
+	glGetShaderiv(m_uiShader, GL_COMPILE_STATUS, &iCompilationStatus); 
 
 	if(iCompilationStatus == GL_FALSE)
 	{

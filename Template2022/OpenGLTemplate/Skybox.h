@@ -13,7 +13,7 @@ public:
 	void Create(float size);
 	void Render(int textureUnit);
 	void Release();
-
+	const CCubemap GetCubeMap() { return m_cubemapTexture; };
 private:
 	UINT m_vao;
 	CVertexBufferObject m_vbo;
