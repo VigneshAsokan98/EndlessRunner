@@ -41,6 +41,10 @@ private:
 	GLuint m_vaoCentreline;
 	GLuint m_vaoLeftOffsetCurve;
 	GLuint m_vaoRightOffsetCurve;
+
+
+	GLuint m_vaoLeftBarrierCurve;
+	GLuint m_vaoRightBarrierCurve;
 	GLuint m_vaoTrack;
 
 	static glm::vec3 _dummy_vector;

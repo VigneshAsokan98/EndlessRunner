@@ -21,6 +21,10 @@ void main()
 {
 	vec4 cubeMapColor = texture(CubeMapTex, normalize(ReflectDirection));
 	vec4 vTexColour = texture(sampler0, vTexCoord);	
-	vOutputColour = mix(vTexColour, cubeMapColor, ReflectFactor);
+	vec4 color = mix(vTexColour, cubeMapColor, ReflectFactor);
+	if(color.a < 0.1f)
+	discard;
+
+	vOutputColour = vec4(color.xyz,0.f);
 
 }

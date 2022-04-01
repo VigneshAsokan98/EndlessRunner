@@ -15,7 +15,7 @@ layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec2 inCoord;
 layout (location = 2) in vec3 inNormal;
 layout (location = 3) in vec3 inColor;
-
+layout (location = 4) in mat4 inModelMat;
 
 // Vertex colour output to fragment shader -- using Gouraud (interpolated) shading
 out vec3 vColour;	// Colour computed using reflectance model

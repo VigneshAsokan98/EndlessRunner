@@ -45,6 +45,7 @@ Source code drawn from a number of sources and examples, including contributions
 #include "CarShape.h"
 #include "Pentagon_pyramid.h"
 #include "Player.h"
+#include "HeightMapTerrain.h"
 
 // Constructor
 Game::Game()
@@ -52,7 +53,7 @@ Game::Game()
 	m_pSkybox = NULL;
 	m_pCamera = NULL;
 	m_pShaderPrograms = NULL;
-	m_pPlanarTerrain = NULL;
+	m_pHeightTerrain = NULL;
 	m_pFtFont = NULL;
 	m_pBarrelMesh = NULL;
 	m_pHorseMesh = NULL;
@@ -63,6 +64,7 @@ Game::Game()
 	m_pCar = NULL;
 	m_pPyramid = NULL;
 	m_pPlayer = NULL;
+	m_pTree = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -76,7 +78,6 @@ Game::~Game()
 	//game objects
 	delete m_pCamera;
 	delete m_pSkybox;
-	delete m_pPlanarTerrain;
 	delete m_pFtFont;
 	delete m_pBarrelMesh;
 	delete m_pHorseMesh;
@@ -86,6 +87,8 @@ Game::~Game()
 	delete m_pCar;
 	delete m_pPyramid;
 	delete m_pPlayer;
+	delete m_pHeightTerrain;
+	delete m_pTree;
 
 	if (m_pShaderPrograms != NULL) {
 		for (unsigned int i = 0; i < m_pShaderPrograms->size(); i++)
@@ -108,10 +111,11 @@ void Game::Initialise()
 	m_pCamera = new CCamera;
 	m_pSkybox = new CSkybox;
 	m_pShaderPrograms = new vector <CShaderProgram *>;
-	m_pPlanarTerrain = new CPlane;
+	m_pHeightTerrain = new CHeightMapTerrain;
 	m_pFtFont = new CFreeTypeFont;
 	m_pBarrelMesh = new COpenAssetImportMesh;
 	m_pHorseMesh = new COpenAssetImportMesh;
+	m_pTree = new COpenAssetImportMesh;
 	m_pSphere = new CSphere;
 	m_pAudio = new CAudio;
 	m_pSpline = new CCatmullRom;
@@ -183,7 +187,8 @@ void Game::Initialise()
 	m_pSkybox->Create(2500.0f);
 	
 	// Create the planar terrain
-	m_pPlanarTerrain->Create("resources\\textures\\", "grassfloor01.jpg", 2000.0f, 2000.0f, 50.0f); // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
+	m_pHeightTerrain->Create((char*)"resources\\textures\\terrainHeightMap200.bmp", (char*)"resources\\textures\\GrassBright.bmp",
+																		glm::vec3(0, 0, 0), 1000.0f, 1000.0f, 100.f); // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
 
 	m_pFtFont->LoadSystemFont("arial.ttf", 32);
 	m_pFtFont->SetShaderProgram(pFontProgram);
@@ -191,6 +196,7 @@ void Game::Initialise()
 	// Load some meshes in OBJ format
 	m_pBarrelMesh->Load("resources\\models\\Barrel\\Barrel02.obj");  // Downloaded from http://www.psionicgames.com/?page_id=24 on 24 Jan 2013
 	m_pHorseMesh->Load("resources\\models\\Horse\\Horse2.obj");  // Downloaded from http://opengameart.org/content/horse-lowpoly on 24 Jan 2013
+	m_pTree->Load("resources\\models\\Trees\\Tree.obj"); //Downloaded from https://free3d.com/3d-model/tree02-35663.html on 30 March 2022
 
 	// Create a sphere
 	m_pSphere->Create("resources\\textures\\", "dirtpile01.jpg", 25, 25);  // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
@@ -256,7 +262,21 @@ void Game::Render()
 	pMainProgram->SetUniform("material1.Md", glm::vec3(0.0f));	// Diffuse material reflectance
 	pMainProgram->SetUniform("material1.Ms", glm::vec3(0.0f));	// Specular material reflectance
 	pMainProgram->SetUniform("material1.shininess", 15.0f);		// Shininess material property
-		
+	pMainProgram->SetUniform("fMinHeight", -50.f);	// Diffuse material reflectance
+	pMainProgram->SetUniform("fMaxHeight", 70.f);	// Specular material reflectance	
+
+	// Render the new terrain
+	modelViewMatrixStack.Push();
+	modelViewMatrixStack.Translate(glm::vec3(0.0f, -100.0f, 0.0f));
+	pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+	pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+	pMainProgram->SetUniform("renderterrain", true);
+	pMainProgram->SetUniform("sampler1", 1);
+	pMainProgram->SetUniform("sampler2", 2);
+	pMainProgram->SetUniform("sampler3", 3);
+	m_pHeightTerrain->Render();
+	modelViewMatrixStack.Pop();
+	pMainProgram->SetUniform("renderterrain", false);
 
 	// Render the skybox and terrain with full ambient reflectance 
 	modelViewMatrixStack.Push();
@@ -275,20 +295,6 @@ void Game::Render()
 	pMainProgram->SetUniform("material1.Md", glm::vec3(0.5f));	// Diffuse material reflectance
 	pMainProgram->SetUniform("material1.Ms", glm::vec3(1.0f));	// Specular material reflectance	
 
-	//// Render the sphere
-	//modelViewMatrixStack.Push();
-	//glm::vec3 p;
-	//m_pSpline->Sample(m_currentDistance + 10.f, p);
-	//	modelViewMatrixStack.Translate(p);
-	//	modelViewMatrixStack.Scale(2.0f);
-	//	pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-	//	pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-	//	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-	//	//pMainProgram->SetUniform("bUseTexture", false);
-	//	m_pSphere->Render();
-	//modelViewMatrixStack.Pop();
-
-
 	//Use of Object Shader
 	CShaderProgram* pObjectShader = (*m_pShaderPrograms)[2];
 	pObjectShader->UseProgram();
@@ -300,20 +306,6 @@ void Game::Render()
 	// Render the Car
 	m_pPlayer->Render(modelViewMatrixStack, pObjectShader, m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()),m_pCamera->GetPosition(), m_pCamera->GetViewMatrix());
 	
-	//modelViewMatrixStack.Push();
-	//glm::vec3 p;
-	//m_pSpline->Sample(m_currentDistance + 10.f, p);
-	//modelViewMatrixStack.Translate(p);
-	//modelViewMatrixStack *= m_PlayerOrientation;
-	//modelViewMatrixStack.Rotate(glm::vec3(0, 1, 0), -1.7f);
-	//modelViewMatrixStack.Scale(2.0f);
-	//pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-	//pObjectShader->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-	//// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-	////pMainProgram->SetUniform("bUseTexture", false);
-	//m_pCar->Render();
-	//modelViewMatrixStack.Pop();
-
 	// Render the Pyramid
 	modelViewMatrixStack.Push();
 	modelViewMatrixStack.Translate(glm::vec3(0,0,0));
@@ -323,6 +315,18 @@ void Game::Render()
 	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
 	//pMainProgram->SetUniform("bUseTexture", false);
 	m_pPyramid->Render();
+	modelViewMatrixStack.Pop();
+
+	// Render the Pyramid
+	modelViewMatrixStack.Push();
+	modelViewMatrixStack.Translate(glm::vec3(0, 0, 0));
+	modelViewMatrixStack.Scale(1.0f);
+	pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+	pObjectShader->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
+	//pMainProgram->SetUniform("bUseTexture", false);
+	pObjectShader->SetUniform("ReflectFactor", 0.05f);
+	m_pTree->Render(20);
 	modelViewMatrixStack.Pop();
 
 	// Render the Spline 
@@ -337,6 +341,7 @@ void Game::Render()
 	m_pSpline->RenderTrack();
 	// Render your object here
 	modelViewMatrixStack.Pop();
+
 	// Draw the 2D graphics after the 3D graphics
 	DisplayFrameRate();
 
@@ -349,19 +354,44 @@ void Game::Render()
 void Game::Update()
 {
 	// Update the camera using the amount of time that has elapsed to avoid framerate dependent motion
-	//m_pCamera->Update(m_dt);
+	
 	m_currentDistance += m_dt * 0.01f * 2.f;
 
-	m_pPlayer->Update(m_dt);
-	glm::vec3 playerPos = m_pPlayer->GetPosition();
-	glm::mat3 TNB = m_pPlayer->GetTNBFrame();
-
-	m_pCamera->Set(playerPos + TNB[2] * 10.f - TNB[1] * 20.f, playerPos, glm::vec3(0, 1, 0));
+	m_pPlayer->Update(m_dt);	
+	UpdateCamera();
 	m_pAudio->Update();
 }
 
+void Game::UpdateCamera()
+{
+	glm::vec3 playerPos = m_pPlayer->GetPosition();
+	glm::mat3 TNB = m_pPlayer->GetTNBFrame();
 
+	switch (m_CurrentCameraAngle)
+	{
+	case CAMERA_ANGLE::Top:
+		m_pCamera->Set(playerPos + TNB[2] * 100.f, playerPos + TNB[1] * 15.f, glm::vec3(0, 1, 0));
+		break;
+	case CAMERA_ANGLE::Side:
+		m_pCamera->Set(playerPos + TNB[0] * 25.f + TNB[2] * 5.f, playerPos, glm::vec3(0, 1, 0));
+		break;
+	case CAMERA_ANGLE::Player:
+		m_pCamera->Set(playerPos + TNB[2] * 10.f - TNB[1] * 20.f, playerPos, glm::vec3(0, 1, 0));
+		break;
+	case CAMERA_ANGLE::Free:
+		m_pCamera->Update(m_dt);
+		break;
+	case CAMERA_ANGLE::MAX:
+		break;
+	default:
+		break;
+	}
+}
 
+void Game::RenderScene()
+{
+	Render();
+}
 void Game::DisplayFrameRate()
 {
 
@@ -413,6 +443,7 @@ void Game::GameLoop()
 	// Variable timer
 	m_pHighResolutionTimer->Start();
 	Update();
+	RenderScene();
 	Render();
 	m_dt = m_pHighResolutionTimer->Elapsed();
 	
@@ -513,6 +544,9 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
 		case 'A':
 			m_pPlayer->MovePlayer(PlayerLane::Left);
 			break;
+		case 'C':
+			ChangeCameraAngle();
+			break;
 		}
 		break;
 
@@ -526,6 +560,16 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
 	}
 
 	return result;
+}
+
+void Game::ChangeCameraAngle()
+{
+	int idx = (int)m_CurrentCameraAngle;
+	idx++;
+	m_CurrentCameraAngle = (CAMERA_ANGLE)idx;
+
+	if (m_CurrentCameraAngle == CAMERA_ANGLE::MAX)
+		m_CurrentCameraAngle = CAMERA_ANGLE::Top;
 }
 
 Game& Game::GetInstance() 

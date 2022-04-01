@@ -20,6 +20,15 @@ class CCatmullRom;
 class CCarShape;
 class CPentagonPyramid;
 class CPlayer;
+class CHeightMapTerrain;
+
+enum class CAMERA_ANGLE {
+	Top = 0,
+	Side,
+	Player,
+	Free,
+	MAX
+};
 
 class Game {
 private:
@@ -27,21 +36,26 @@ private:
 	void Initialise();
 	void Update();
 	void Render();
+	void RenderScene();
+	void UpdateCamera();
 
 	// Pointers to game objects.  They will get allocated in Game::Initialise()
 	CSkybox *m_pSkybox;
 	vector <CShaderProgram *> *m_pShaderPrograms;
-	CPlane *m_pPlanarTerrain;
+	//CPlane *m_pPlanarTerrain;
+	CHeightMapTerrain* m_pHeightTerrain;
 	CFreeTypeFont *m_pFtFont;
 	COpenAssetImportMesh *m_pBarrelMesh;
 	COpenAssetImportMesh *m_pHorseMesh;
+	COpenAssetImportMesh *m_pTree;
+
 	CSphere *m_pSphere;
 	CHighResolutionTimer *m_pHighResolutionTimer;
 	CAudio *m_pAudio;
-	CCatmullRom* m_pSpline;
-	CCarShape* m_pCar;
-	CPentagonPyramid* m_pPyramid;
-	CPlayer* m_pPlayer;
+	CCatmullRom *m_pSpline;
+	CCarShape *m_pCar;
+	CPentagonPyramid *m_pPyramid;
+	CPlayer *m_pPlayer;
 
 	// Some other member variables
 	double m_dt;
@@ -63,6 +77,7 @@ private:
 	static const int FPS = 60;
 	void DisplayFrameRate();
 	void GameLoop();
+	void ChangeCameraAngle();
 	GameWindow m_gameWindow;
 	HINSTANCE m_hInstance;
 	int m_frameCount;
@@ -71,4 +86,5 @@ private:
 	glm::mat4 m_PlayerOrientation;
 
 
+	CAMERA_ANGLE m_CurrentCameraAngle = CAMERA_ANGLE::Player;
 };

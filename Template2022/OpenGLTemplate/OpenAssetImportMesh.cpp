@@ -203,7 +203,7 @@ bool COpenAssetImportMesh::InitMaterials(const aiScene* pScene, const std::strin
     return Ret;
 }
 
-void COpenAssetImportMesh::Render()
+void COpenAssetImportMesh::Render(int instance)
 {
 	glBindVertexArray(m_vao);
 
@@ -227,7 +227,7 @@ void COpenAssetImportMesh::Render()
         }
 
 
-        glDrawElements(GL_TRIANGLES, m_Entries[i].NumIndices, GL_UNSIGNED_INT, 0);
+        glDrawElementsInstanced(GL_TRIANGLES, m_Entries[i].NumIndices, GL_UNSIGNED_INT, 0, instance);
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
 		glDisableVertexAttribArray(2);

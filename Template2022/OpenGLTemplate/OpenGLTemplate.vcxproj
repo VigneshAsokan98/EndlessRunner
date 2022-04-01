@@ -129,9 +129,11 @@
     <ClInclude Include="CatmullRom.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Cubemap.h" />
+    <ClInclude Include="FaceVertexMesh.h" />
     <ClInclude Include="FreeTypeFont.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameWindow.h" />
+    <ClInclude Include="HeightMapTerrain.h" />
     <ClInclude Include="HighResolutionTimer.h" />
     <ClInclude Include="MatrixStack.h" />
     <ClInclude Include="OpenAssetImportMesh.h" />
@@ -151,9 +153,11 @@
     <ClCompile Include="CarShape.cpp" />
     <ClCompile Include="CatmullRom.cpp" />
     <ClCompile Include="Cubemap.cpp" />
+    <ClCompile Include="FaceVertexMesh.cpp" />
     <ClCompile Include="FreeTypeFont.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameWindow.cpp" />
+    <ClCompile Include="HeightMapTerrain.cpp" />
     <ClCompile Include="HighResolutionTimer.cpp" />
     <ClCompile Include="MatrixStack.cpp" />
     <ClCompile Include="OpenAssetImportMesh.cpp" />

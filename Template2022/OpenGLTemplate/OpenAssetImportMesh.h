@@ -57,7 +57,7 @@ public:
     COpenAssetImportMesh();
     ~COpenAssetImportMesh();
     bool Load(const std::string& Filename);
-    void Render();
+    void Render(int instance = 1);
 
 private:
     bool InitFromScene(const aiScene* pScene, const std::string& Filename);
