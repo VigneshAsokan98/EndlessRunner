@@ -180,6 +180,7 @@ void Game::Initialise()
 	pObjectShader->LinkProgram();
 	m_pShaderPrograms->push_back(pObjectShader);
 
+
 	// You can follow this pattern to load additional shaders
 
 	// Create the skybox
@@ -196,7 +197,7 @@ void Game::Initialise()
 	// Load some meshes in OBJ format
 	m_pBarrelMesh->Load("resources\\models\\Barrel\\Barrel02.obj");  // Downloaded from http://www.psionicgames.com/?page_id=24 on 24 Jan 2013
 	m_pHorseMesh->Load("resources\\models\\Horse\\Horse2.obj");  // Downloaded from http://opengameart.org/content/horse-lowpoly on 24 Jan 2013
-	m_pTree->Load("resources\\models\\Trees\\Tree.obj"); //Downloaded from https://free3d.com/3d-model/tree02-35663.html on 30 March 2022
+	m_pTree->Load("resources\\models\\Clouds\\cloud.obj"); //Downloaded from https://free3d.com/3d-model/tree02-35663.html on 30 March 2022
 
 	// Create a sphere
 	m_pSphere->Create("resources\\textures\\", "dirtpile01.jpg", 25, 25);  // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
@@ -218,6 +219,20 @@ void Game::Initialise()
 	m_pPyramid->Create();
 
 	m_pPlayer->Init(m_pSpline, m_pSkybox->GetCubeMap());
+
+	SetTreeOffsets();
+}
+void Game::SetTreeOffsets()
+{
+	int min = -300, max = 300;
+	for (int i = 0; i < 20; i++)
+	{
+		float x = (float)((rand() % (max - min)) + min);
+		float z = (float)((rand() % (max - min)) + min);
+		
+		float y = m_pHeightTerrain->ReturnGroundHeight(glm::vec3(x, 0, z));
+		m_treesOffset[i] = glm::vec3(x, y, z);
+	}
 }
 
 // Render method runs repeatedly in a loop
@@ -300,12 +315,39 @@ void Game::Render()
 	pObjectShader->UseProgram();
 	pObjectShader->SetUniform("sampler0", 0);
 	pObjectShader->SetUniform("bUseTexture", true);
-	pObjectShader->SetUniform("CubeMapTex", cubeMapTextureUnit);
+	pObjectShader->SetUniform("CubeMapTex", 10);
 	pObjectShader->SetUniform("matrices.projMatrix", m_pCamera->GetPerspectiveProjectionMatrix());
 	
+
+
+	glm::vec3 playerPos = m_pPlayer->GetPosition();
+	glm::mat3 TNB = m_pPlayer->GetTNBFrame();
+
+	// Set light and materials in sphere programme
+	pObjectShader->SetUniform("light1.position", viewMatrix * glm::vec4(playerPos + TNB[2] * 2.f + TNB[1] * 5.f, 1.f));
+	pObjectShader->SetUniform("light1.La", glm::vec3(1.f));
+	pObjectShader->SetUniform("light1.Ld", glm::vec3(1.f));
+	pObjectShader->SetUniform("light1.Ls", glm::vec3(1.f));
+	pObjectShader->SetUniform("light1.direction", glm::normalize(viewNormalMatrix * TNB[1]));
+	pObjectShader->SetUniform("light1.exponent", 20.0f);
+	pObjectShader->SetUniform("light1.cutoff", 30.0f);
+	pObjectShader->SetUniform("light2.position", viewMatrix * glm::vec4(playerPos + TNB[2] * 20.f, 1.f) * 10.f);
+	pObjectShader->SetUniform("light2.La", glm::vec3(.5f));
+	pObjectShader->SetUniform("light2.Ld", glm::vec3(.5f));
+	pObjectShader->SetUniform("light2.Ls", glm::vec3(.5f));
+	pObjectShader->SetUniform("light2.direction", glm::normalize(viewNormalMatrix * glm::vec3(0, -1, 0)));
+	pObjectShader->SetUniform("light2.exponent", 20.0f);
+	pObjectShader->SetUniform("light2.cutoff", 30.0f);
+	pObjectShader->SetUniform("material1.shininess", 15.0f);
+	pObjectShader->SetUniform("material1.Ma", glm::vec3(1.f));
+	pObjectShader->SetUniform("material1.Md", glm::vec3(1.f));
+	pObjectShader->SetUniform("material1.Ms", glm::vec3(1.f));
+
+	pObjectShader->SetUniform("useLight", m_useLight);
+
 	// Render the Car
-	m_pPlayer->Render(modelViewMatrixStack, pObjectShader, m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()),m_pCamera->GetPosition(), m_pCamera->GetViewMatrix());
-	
+	m_pPlayer->Render(modelViewMatrixStack, pObjectShader, m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()), m_pCamera->GetPosition(), m_pCamera->GetViewMatrix());
+
 	// Render the Pyramid
 	modelViewMatrixStack.Push();
 	modelViewMatrixStack.Translate(glm::vec3(0,0,0));
@@ -316,19 +358,7 @@ void Game::Render()
 	//pMainProgram->SetUniform("bUseTexture", false);
 	m_pPyramid->Render();
 	modelViewMatrixStack.Pop();
-
-	// Render the Pyramid
-	modelViewMatrixStack.Push();
-	modelViewMatrixStack.Translate(glm::vec3(0, 0, 0));
-	modelViewMatrixStack.Scale(1.0f);
-	pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-	pObjectShader->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-	//pMainProgram->SetUniform("bUseTexture", false);
-	pObjectShader->SetUniform("ReflectFactor", 0.05f);
-	m_pTree->Render(20);
-	modelViewMatrixStack.Pop();
-
+	
 	// Render the Spline 
 	modelViewMatrixStack.Push();
 	pObjectShader->SetUniform("bUseTexture", true); // turn off texturing
@@ -341,7 +371,7 @@ void Game::Render()
 	m_pSpline->RenderTrack();
 	// Render your object here
 	modelViewMatrixStack.Pop();
-
+	
 	// Draw the 2D graphics after the 3D graphics
 	DisplayFrameRate();
 
@@ -379,7 +409,8 @@ void Game::UpdateCamera()
 		m_pCamera->Set(playerPos + TNB[2] * 10.f - TNB[1] * 20.f, playerPos, glm::vec3(0, 1, 0));
 		break;
 	case CAMERA_ANGLE::Free:
-		m_pCamera->Update(m_dt);
+		m_pCamera->Update(m_dt * 10);
+		m_pSkybox->SwitchTexture(1);
 		break;
 	case CAMERA_ANGLE::MAX:
 		break;
@@ -388,10 +419,6 @@ void Game::UpdateCamera()
 	}
 }
 
-void Game::RenderScene()
-{
-	Render();
-}
 void Game::DisplayFrameRate()
 {
 
@@ -443,7 +470,6 @@ void Game::GameLoop()
 	// Variable timer
 	m_pHighResolutionTimer->Start();
 	Update();
-	RenderScene();
 	Render();
 	m_dt = m_pHighResolutionTimer->Elapsed();
 	
@@ -546,6 +572,9 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
 			break;
 		case 'C':
 			ChangeCameraAngle();
+			break;
+		case 'L':
+			m_useLight = !m_useLight;
 			break;
 		}
 		break;

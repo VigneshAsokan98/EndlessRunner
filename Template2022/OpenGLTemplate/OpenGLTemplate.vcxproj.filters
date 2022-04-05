@@ -174,5 +174,11 @@
     <None Include="resources\shaders\ObjectShader.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="resources\shaders\InstanceShader.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\InstanceShader.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

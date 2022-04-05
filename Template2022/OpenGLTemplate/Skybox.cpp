@@ -14,12 +14,15 @@ CSkybox::~CSkybox()
 void CSkybox::Create(float size)
 {
 
-	m_cubemapTexture.Create("resources\\skyboxes\\BrightSky\\paze_rt.jpg", "resources\\skyboxes\\BrightSky\\paze_lf.jpg",
+	m_cubemapTexture[0].Create("resources\\skyboxes\\BrightSky\\paze_rt.jpg", "resources\\skyboxes\\BrightSky\\paze_lf.jpg",
 		"resources\\skyboxes\\BrightSky\\paze_up.jpg", "resources\\skyboxes\\BrightSky\\paze_dn.jpg",
 		"resources\\skyboxes\\BrightSky\\paze_bk.jpg", "resources\\skyboxes\\BrightSky\\paze_ft.jpg");
 
+	m_cubemapTexture[1].Create("resources\\skyboxes\\Space\\sleepyhollow_rt.jpg", "resources\\skyboxes\\Space\\sleepyhollow_lf.jpg",
+		"resources\\skyboxes\\Space\\sleepyhollow_up.jpg", "resources\\skyboxes\\Space\\sleepyhollow_dn.jpg",
+		"resources\\skyboxes\\Space\\sleepyhollow_bk.jpg", "resources\\skyboxes\\Space\\sleepyhollow_ft.jpg");
 	
-	
+	m_currentCubemap = m_cubemapTexture[0];
 	glGenVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
 
@@ -81,12 +84,17 @@ void CSkybox::Create(float size)
 	
 }
 
+void CSkybox::SwitchTexture(int idx)
+{
+	m_currentCubemap = m_cubemapTexture[idx];
+
+}
 // Render the skybox
 void CSkybox::Render(int textureUnit)
 {
 	glDepthMask(0);
 	glBindVertexArray(m_vao);
-	m_cubemapTexture.Bind(textureUnit);
+	m_currentCubemap.Bind(textureUnit);
 	for (int i = 0; i < 6; i++) {
 		//m_textures[i].Bind();
 		glDrawArrays(GL_TRIANGLE_STRIP, i*4, 4);
@@ -99,7 +107,7 @@ void CSkybox::Release()
 {
 	//for (int i = 0; i < 6; i++)
 		//m_textures[i].Release();
-	m_cubemapTexture.Release();
+	m_currentCubemap.Release();
 	glDeleteVertexArrays(1, &m_vao);
 	m_vbo.Release();
 }

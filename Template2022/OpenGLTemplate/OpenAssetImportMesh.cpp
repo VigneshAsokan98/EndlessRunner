@@ -126,7 +126,8 @@ void COpenAssetImportMesh::InitMesh(unsigned int Index, const aiMesh* paiMesh)
 
         Vertex v(glm::vec3(pPos->x, pPos->y, pPos->z),
                  glm::vec2(pTexCoord->x, 1.0f-pTexCoord->y),
-                 glm::vec3(pNormal->x, pNormal->y, pNormal->z));
+                 glm::vec3(pNormal->x, pNormal->y, pNormal->z),
+                 glm::vec3(0,100,0));
 
         Vertices.push_back(v);
     }

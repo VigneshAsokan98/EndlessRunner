@@ -13,10 +13,12 @@ public:
 	void Create(float size);
 	void Render(int textureUnit);
 	void Release();
-	const CCubemap GetCubeMap() { return m_cubemapTexture; };
+	const CCubemap GetCubeMap() { return m_currentCubemap; };
+	void SwitchTexture(int idx = 0);
 private:
 	UINT m_vao;
 	CVertexBufferObject m_vbo;
-	CCubemap m_cubemapTexture;
+	CCubemap m_cubemapTexture[2];
+	CCubemap m_currentCubemap;
 	
 };

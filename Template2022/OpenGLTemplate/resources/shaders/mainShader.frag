@@ -22,11 +22,12 @@ void main()
 {
 
 
-	if (renderSkybox) {
+	if (renderSkybox)
+	{
 		vOutputColour = texture(CubeMapTex, worldPosition);
-
-	} else {
-
+	} 
+	else 
+	{
 		// Get the texel colour from the texture sampler
 		if(renderterrain)
 		{

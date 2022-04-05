@@ -28,7 +28,7 @@ void CPlayer::Init(CCatmullRom *_spline, CCubemap _reflectionMap)
 void CPlayer::Update(double dt)
 {
 	m_timer += dt;
-	m_currentDistance += dt * 0.2f;
+	m_currentDistance += dt * m_playerSpeed;
 	glm::vec3 xAxis = glm::vec3(1, 0, 0);
 	glm::vec3 yAxis = glm::vec3(0, 1, 0);
 	glm::vec3 zAxis = glm::vec3(0, 0, 1);
@@ -84,7 +84,6 @@ void CPlayer::Render(glutil::MatrixStack& _modelViewMatrixStack, CShaderProgram*
 	glm::mat4 inverseViewMatrix = glm::inverse(_viewMat);
 	_shader->SetUniform("matrices.inverseViewMatrix", inverseViewMatrix);
 	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-	//pMainProgram->SetUniform("bUseTexture", false);
 	m_pModel->Render();
 	_modelViewMatrixStack.Pop();
 }

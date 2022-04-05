@@ -1,3 +1,3 @@
 ﻿  Game.cpp
-D:\UNI\Term2\ComputerGraphics\Coursework\EndlessRunner\Template2022\OpenGLTemplate\Game.cpp(358,41): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
+D:\UNI\Term2\ComputerGraphics\Coursework\EndlessRunner\Template2022\OpenGLTemplate\Game.cpp(388,41): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
   OpenGLTemplate.vcxproj -> D:\UNI\Term2\ComputerGraphics\Coursework\EndlessRunner\Template2022\x64\Debug\OpenGLTemplate.exe

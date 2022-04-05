@@ -36,8 +36,9 @@ private:
 	void Initialise();
 	void Update();
 	void Render();
-	void RenderScene();
+	void SetTreeOffsets();
 	void UpdateCamera();
+	void SetShaderProps(CShaderProgram* shader);
 
 	// Pointers to game objects.  They will get allocated in Game::Initialise()
 	CSkybox *m_pSkybox;
@@ -84,7 +85,7 @@ private:
 	double m_elapsedTime;
 	float m_currentDistance;
 	glm::mat4 m_PlayerOrientation;
-
-
+	glm::vec3 m_treesOffset[20];
+	bool m_useLight = false;
 	CAMERA_ANGLE m_CurrentCameraAngle = CAMERA_ANGLE::Player;
 };

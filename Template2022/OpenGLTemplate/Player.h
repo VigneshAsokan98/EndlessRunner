@@ -39,4 +39,5 @@ private:
 	glm::mat3 m_TNB;
 	PlayerLane m_currentLane = PlayerLane::Center;
 	float m_timer = 0.f;
+	float m_playerSpeed = 0.1f;
 };
