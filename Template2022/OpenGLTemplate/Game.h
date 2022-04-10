@@ -21,7 +21,14 @@ class CCarShape;
 class CPentagonPyramid;
 class CPlayer;
 class CHeightMapTerrain;
+class CEnemyManager;
+class CBullet;
 
+enum class GameState {
+	Menu = 0,
+	GamePlay,
+	GameOver
+};
 enum class CAMERA_ANGLE {
 	Top = 0,
 	Side,
@@ -55,14 +62,31 @@ private:
 	CAudio *m_pAudio;
 	CCatmullRom *m_pSpline;
 	CCarShape *m_pCar;
-	CPentagonPyramid *m_pPyramid;
 	CPlayer *m_pPlayer;
+	CBullet *m_pBullet;
 
 	// Some other member variables
 	double m_dt;
 	int m_framesPerSecond;
 	bool m_appActive;
 
+	CCamera* m_pCamera;
+	static const int FPS = 120;
+	GameWindow m_gameWindow;
+	HINSTANCE m_hInstance;
+
+	CAMERA_ANGLE m_CurrentCameraAngle = CAMERA_ANGLE::Player;
+	CEnemyManager* m_pEnemyManager;
+	GameState m_currentGameState = GameState::Menu;
+
+	int m_frameCount;
+	double m_elapsedTime;
+	glm::mat4 m_PlayerOrientation;
+	glm::vec3 m_treesOffset[20];
+	bool m_useLight = true;
+	int m_Score = 0;
+	bool m_menuPlaySelected = true;
+	bool m_isGameOver = false;
 
 public:
 	Game();
@@ -74,18 +98,12 @@ public:
 	CCamera* GetCamera() { return m_pCamera; }
 
 private:
-	CCamera* m_pCamera;
-	static const int FPS = 60;
-	void DisplayFrameRate();
+
+	void DisplayHUD();
 	void GameLoop();
 	void ChangeCameraAngle();
-	GameWindow m_gameWindow;
-	HINSTANCE m_hInstance;
-	int m_frameCount;
-	double m_elapsedTime;
-	float m_currentDistance;
-	glm::mat4 m_PlayerOrientation;
-	glm::vec3 m_treesOffset[20];
-	bool m_useLight = false;
-	CAMERA_ANGLE m_CurrentCameraAngle = CAMERA_ANGLE::Player;
+	void RenderGameOver();
+	void SwitchState(GameState type);
+	void RenderMenu();
+	void HandleBulletCollision();
 };

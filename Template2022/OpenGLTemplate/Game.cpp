@@ -46,6 +46,8 @@ Source code drawn from a number of sources and examples, including contributions
 #include "Pentagon_pyramid.h"
 #include "Player.h"
 #include "HeightMapTerrain.h"
+#include "EnemyManager.h"
+#include "Bullet.h"
 
 // Constructor
 Game::Game()
@@ -62,9 +64,9 @@ Game::Game()
 	m_pAudio = NULL; 
 	m_pSpline = NULL;
 	m_pCar = NULL;
-	m_pPyramid = NULL;
 	m_pPlayer = NULL;
-	m_pTree = NULL;
+	m_pEnemyManager = NULL;
+	m_pBullet = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -85,10 +87,10 @@ Game::~Game()
 	delete m_pAudio;
 	delete m_pSpline;
 	delete m_pCar;
-	delete m_pPyramid;
 	delete m_pPlayer;
 	delete m_pHeightTerrain;
-	delete m_pTree;
+	delete m_pEnemyManager;
+	delete m_pBullet;
 
 	if (m_pShaderPrograms != NULL) {
 		for (unsigned int i = 0; i < m_pShaderPrograms->size(); i++)
@@ -120,9 +122,9 @@ void Game::Initialise()
 	m_pAudio = new CAudio;
 	m_pSpline = new CCatmullRom;
 	m_pCar = new CCarShape;
-	m_pPyramid = new CPentagonPyramid;
 	m_pPlayer = new CPlayer;
-	m_currentDistance = 0.f;
+	m_pEnemyManager = new CEnemyManager;
+	m_pBullet = new CBullet;
 
 	RECT dimensions = m_gameWindow.GetDimensions();
 
@@ -191,7 +193,7 @@ void Game::Initialise()
 	m_pHeightTerrain->Create((char*)"resources\\textures\\terrainHeightMap200.bmp", (char*)"resources\\textures\\GrassBright.bmp",
 																		glm::vec3(0, 0, 0), 1000.0f, 1000.0f, 100.f); // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
 
-	m_pFtFont->LoadSystemFont("arial.ttf", 32);
+	m_pFtFont->LoadSystemFont("resources\\fonts\\stencil.ttf", 32);
 	m_pFtFont->SetShaderProgram(pFontProgram);
 
 	// Load some meshes in OBJ format
@@ -213,32 +215,22 @@ void Game::Initialise()
 	m_pSpline->CreateCentreline("resources\\textures\\Toon_Road_Texture.png");
 	m_pSpline->CreateOffsetCurves();
 	m_pSpline->CreateTrack();
+	m_pSpline->CreateFenceCurves("resources\\textures\\fence.png");
 
 	//Create Primitive Objects
 	m_pCar->CreateCar();
-	m_pPyramid->Create();
 
-	m_pPlayer->Init(m_pSpline, m_pSkybox->GetCubeMap());
+	m_pPlayer->Init(m_pSpline);
 
-	SetTreeOffsets();
+	//Create Enemies
+	m_pEnemyManager->Init(m_pSpline,m_pPlayer);
+	m_pBullet->Init(m_pSpline);
 }
-void Game::SetTreeOffsets()
-{
-	int min = -300, max = 300;
-	for (int i = 0; i < 20; i++)
-	{
-		float x = (float)((rand() % (max - min)) + min);
-		float z = (float)((rand() % (max - min)) + min);
-		
-		float y = m_pHeightTerrain->ReturnGroundHeight(glm::vec3(x, 0, z));
-		m_treesOffset[i] = glm::vec3(x, y, z);
-	}
-}
+
 
 // Render method runs repeatedly in a loop
 void Game::Render() 
-{
-	
+{	
 	// Clear the buffers and enable depth testing (z-buffering)
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -324,72 +316,129 @@ void Game::Render()
 	glm::mat3 TNB = m_pPlayer->GetTNBFrame();
 
 	// Set light and materials in sphere programme
-	pObjectShader->SetUniform("light1.position", viewMatrix * glm::vec4(playerPos + TNB[2] * 2.f + TNB[1] * 5.f, 1.f));
-	pObjectShader->SetUniform("light1.La", glm::vec3(1.f));
-	pObjectShader->SetUniform("light1.Ld", glm::vec3(1.f));
-	pObjectShader->SetUniform("light1.Ls", glm::vec3(1.f));
-	pObjectShader->SetUniform("light1.direction", glm::normalize(viewNormalMatrix * TNB[1]));
-	pObjectShader->SetUniform("light1.exponent", 20.0f);
-	pObjectShader->SetUniform("light1.cutoff", 30.0f);
-	pObjectShader->SetUniform("light2.position", viewMatrix * glm::vec4(playerPos + TNB[2] * 20.f, 1.f) * 10.f);
-	pObjectShader->SetUniform("light2.La", glm::vec3(.5f));
-	pObjectShader->SetUniform("light2.Ld", glm::vec3(.5f));
-	pObjectShader->SetUniform("light2.Ls", glm::vec3(.5f));
-	pObjectShader->SetUniform("light2.direction", glm::normalize(viewNormalMatrix * glm::vec3(0, -1, 0)));
-	pObjectShader->SetUniform("light2.exponent", 20.0f);
-	pObjectShader->SetUniform("light2.cutoff", 30.0f);
+	pObjectShader->SetUniform("Spotlight[0].position", viewMatrix * glm::vec4(playerPos + TNB[0] * 2.f + TNB[2] * 5.f + TNB[1] * 2.f, 1.f));
+	pObjectShader->SetUniform("Spotlight[0].La", glm::vec3(1.f));
+	pObjectShader->SetUniform("Spotlight[0].Ld", glm::vec3(1.f));	
+	pObjectShader->SetUniform("Spotlight[0].Ls", glm::vec3(1.f));
+	pObjectShader->SetUniform("Spotlight[0].direction", glm::normalize(viewNormalMatrix * TNB[0]));
+	pObjectShader->SetUniform("Spotlight[0].exponent", 20.0f);
+	pObjectShader->SetUniform("Spotlight[0].cutoff", 30.0f); 
+
+	pObjectShader->SetUniform("Spotlight[1].position", viewMatrix * glm::vec4(playerPos + TNB[0] * 2.f + TNB[2] * 5.f + TNB[1] * -2.f, 1.f));
+	pObjectShader->SetUniform("Spotlight[1].La", glm::vec3(1.f));
+	pObjectShader->SetUniform("Spotlight[1].Ld", glm::vec3(1.f));
+	pObjectShader->SetUniform("Spotlight[1].Ls", glm::vec3(1.f));
+	pObjectShader->SetUniform("Spotlight[1].direction", glm::normalize(viewNormalMatrix * TNB[0]));
+	pObjectShader->SetUniform("Spotlight[1].exponent", 20.0f);
+	pObjectShader->SetUniform("Spotlight[1].cutoff", 30.0f);
+
 	pObjectShader->SetUniform("material1.shininess", 15.0f);
-	pObjectShader->SetUniform("material1.Ma", glm::vec3(1.f));
-	pObjectShader->SetUniform("material1.Md", glm::vec3(1.f));
-	pObjectShader->SetUniform("material1.Ms", glm::vec3(1.f));
+	pObjectShader->SetUniform("material1.Ma", glm::vec3(.5f));
+	pObjectShader->SetUniform("material1.Md", glm::vec3(.5f));
+	pObjectShader->SetUniform("material1.Ms", glm::vec3(.5f));
+
+	pObjectShader->SetUniform("Positionlight[0].Position", viewMatrix* glm::vec4(playerPos + TNB[2] * 2.f + TNB[1] * 5.f + TNB[0] * 2.f, 1.f));
+	pObjectShader->SetUniform("Positionlight[0].Intensity", glm::vec3(1.f, .0f, 0.f));
 
 	pObjectShader->SetUniform("useLight", m_useLight);
 
 	// Render the Car
 	m_pPlayer->Render(modelViewMatrixStack, pObjectShader, m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()), m_pCamera->GetPosition(), m_pCamera->GetViewMatrix());
 
-	// Render the Pyramid
-	modelViewMatrixStack.Push();
-	modelViewMatrixStack.Translate(glm::vec3(0,0,0));
-	modelViewMatrixStack.Scale(1.0f);
-	pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-	pObjectShader->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-	// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-	//pMainProgram->SetUniform("bUseTexture", false);
-	m_pPyramid->Render();
-	modelViewMatrixStack.Pop();
-	
 	// Render the Spline 
 	modelViewMatrixStack.Push();
 	pObjectShader->SetUniform("bUseTexture", true); // turn off texturing
 	pObjectShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
 	pObjectShader->SetUniform("matrices.normalMatrix",
 		m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-	pObjectShader->SetUniform("ReflectFactor", 0.05f);
+	pObjectShader->SetUniform("ReflectFactor", 0.f);
 	/*m_pSpline->RenderCentreline();
 	m_pSpline->RenderOffsetCurves();*/
 	m_pSpline->RenderTrack();
+	m_pSpline->RenderFences();
 	// Render your object here
 	modelViewMatrixStack.Pop();
 	
+	m_pEnemyManager->Render(modelViewMatrixStack, pObjectShader, m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()), m_pCamera->GetPosition(), m_pCamera->GetViewMatrix());
+	m_pBullet->Render(modelViewMatrixStack, pObjectShader, m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()), m_pCamera->GetPosition(), m_pCamera->GetViewMatrix());
 	// Draw the 2D graphics after the 3D graphics
-	DisplayFrameRate();
+	DisplayHUD();
 
 	// Swap buffers to show the rendered image
-	SwapBuffers(m_gameWindow.Hdc());		  
+	SwapBuffers(m_gameWindow.Hdc());	  
 
 }
 
+void Game::RenderMenu()
+{
+	// Clear the buffers and enable depth testing (z-buffering)
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	CShaderProgram* fontProgram = (*m_pShaderPrograms)[1];
+
+	RECT dimensions = m_gameWindow.GetDimensions();
+	int height = dimensions.bottom - dimensions.top;
+	int width = dimensions.right - dimensions.left;
+
+	// Use the font shader program and render the text
+	fontProgram->UseProgram();
+	glDisable(GL_DEPTH_TEST);
+	fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
+	fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
+	fontProgram->SetUniform("vColour", glm::vec4(0.894f, 0.066f, 0.458f, 1.f));
+	if (m_menuPlaySelected)
+	{
+		m_pFtFont->Render(width / 3, height / 2, 50, ">Play<");
+		m_pFtFont->Render(width / 3, height / 2 - 40, 50, "Exit");
+	}
+	else
+	{
+		m_pFtFont->Render(width / 3, height / 2, 50, "Play");
+		m_pFtFont->Render(width / 3, height / 2 - 40, 50, ">Exit<");
+	}
+
+	// Swap buffers to show the rendered image
+	SwapBuffers(m_gameWindow.Hdc());
+}
+void Game::RenderGameOver()
+{
+	// Clear the buffers and enable depth testing (z-buffering)
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	CShaderProgram* fontProgram = (*m_pShaderPrograms)[1];
+
+	RECT dimensions = m_gameWindow.GetDimensions();
+	int height = dimensions.bottom - dimensions.top;
+	int width = dimensions.right - dimensions.left;
+			
+	// Use the font shader program and render the text
+		fontProgram->UseProgram();
+		glDisable(GL_DEPTH_TEST);
+		fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
+		fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
+		fontProgram->SetUniform("vColour", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		m_pFtFont->Render(width / 3, height / 2, 50, "Game Over");
+
+	// Swap buffers to show the rendered image
+	SwapBuffers(m_gameWindow.Hdc());
+}
 // Update method runs repeatedly with the Render method
 void Game::Update()
 {
-	// Update the camera using the amount of time that has elapsed to avoid framerate dependent motion
-	
-	m_currentDistance += m_dt * 0.01f * 2.f;
+		
+	if (m_pPlayer->GetPosition().y > 0)
+		m_pSkybox->SwitchTexture(1);
+	else
+		m_pSkybox->SwitchTexture(0);
 
 	m_pPlayer->Update(m_dt);	
 	UpdateCamera();
 	m_pAudio->Update();
+	m_isGameOver = m_pEnemyManager->Update(m_dt, m_pPlayer->GetPosition());
+	m_pBullet->Update(m_dt);
+	HandleBulletCollision();
+	if (m_isGameOver)
+		SwitchState(GameState::GameOver);
 }
 
 void Game::UpdateCamera()
@@ -400,17 +449,16 @@ void Game::UpdateCamera()
 	switch (m_CurrentCameraAngle)
 	{
 	case CAMERA_ANGLE::Top:
-		m_pCamera->Set(playerPos + TNB[2] * 100.f, playerPos + TNB[1] * 15.f, glm::vec3(0, 1, 0));
+		m_pCamera->Set(playerPos + TNB[2] * 200.f, playerPos + TNB[1] * 15.f, glm::vec3(0, 1, 0));
 		break;
 	case CAMERA_ANGLE::Side:
-		m_pCamera->Set(playerPos + TNB[0] * 25.f + TNB[2] * 5.f, playerPos, glm::vec3(0, 1, 0));
+		m_pCamera->Set(playerPos + TNB[1] * 30.f + TNB[2] * 5.f, playerPos, glm::vec3(0, 1, 0));
 		break;
 	case CAMERA_ANGLE::Player:
-		m_pCamera->Set(playerPos + TNB[2] * 10.f - TNB[1] * 20.f, playerPos, glm::vec3(0, 1, 0));
+		m_pCamera->Set(playerPos - TNB[0] * 25.f + TNB[2] * 10.f, playerPos, glm::vec3(0, 1, 0));
 		break;
 	case CAMERA_ANGLE::Free:
 		m_pCamera->Update(m_dt * 10);
-		m_pSkybox->SwitchTexture(1);
 		break;
 	case CAMERA_ANGLE::MAX:
 		break;
@@ -419,13 +467,14 @@ void Game::UpdateCamera()
 	}
 }
 
-void Game::DisplayFrameRate()
+void Game::DisplayHUD()
 {
 
 	CShaderProgram *fontProgram = (*m_pShaderPrograms)[1];
 
 	RECT dimensions = m_gameWindow.GetDimensions();
 	int height = dimensions.bottom - dimensions.top;
+	int width = dimensions.right - dimensions.left;
 
 	// Increase the elapsed time and frame counter
 	m_elapsedTime += m_dt;
@@ -448,30 +497,69 @@ void Game::DisplayFrameRate()
 		glDisable(GL_DEPTH_TEST);
 		fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
 		fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
-		fontProgram->SetUniform("vColour", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		fontProgram->SetUniform("vColour", glm::vec4(.0f, 1.0f, .0f, 1.0f));
 		m_pFtFont->Render(20, height - 20, 20, "FPS: %d", m_framesPerSecond);
+		fontProgram->SetUniform("vColour", glm::vec4(0.894f, 0.066f, 0.458f, 1.f));
+		m_pFtFont->Render(width - 120, height - 30, 25, "Laps: %d", m_pPlayer->GetLaps());
+		m_pFtFont->Render(width - 120, height - 60, 25, "Score: %d", m_Score);
+
 	}
 }
 
+void Game::HandleBulletCollision()
+{
+	bool isHit = m_pEnemyManager->CheckBulletCollision(m_pBullet->GetPosition());
+	if (isHit)
+	{
+		m_pBullet->Disable();
+		m_Score++;
+	}
+}
+void Game::SwitchState(GameState type)
+{
+	if (m_currentGameState == type)
+		return;
+
+	m_currentGameState = type;
+}
 // The game loop runs repeatedly until game over
 void Game::GameLoop()
-{
-	/*
+{	
 	// Fixed timer
-	dDt = pHighResolutionTimer->Elapsed();
-	if (dDt > 1000.0 / (double) Game::FPS) {
-		pHighResolutionTimer->Start();
-		Update();
-		Render();
-	}
-	*/
-	
-	
-	// Variable timer
-	m_pHighResolutionTimer->Start();
-	Update();
-	Render();
 	m_dt = m_pHighResolutionTimer->Elapsed();
+	if (m_dt > 1000.0 / (double) Game::FPS) {
+		m_pHighResolutionTimer->Start();
+		switch (m_currentGameState)
+		{
+		case GameState::Menu:
+			RenderMenu();
+			break;
+		case GameState::GamePlay:
+			Update();
+			Render();
+			break;
+		case GameState::GameOver:
+			RenderGameOver();
+			break;
+		default:
+			break;
+		}
+		
+	}
+	
+	
+	//// Variable timer
+	//m_pHighResolutionTimer->Start();
+
+	//if (m_isGameOver)
+	//	RenderGameOver();
+	//else
+	//{
+	//	Update();
+	//	Render();
+	//}
+
+	//	m_dt = m_pHighResolutionTimer->Elapsed();
 	
 
 }
@@ -552,6 +640,12 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
 		case VK_ESCAPE:
 			PostQuitMessage(0);
 			break;
+		case VK_SPACE:
+			if (m_currentGameState == GameState::Menu)
+				SwitchState(GameState::GamePlay);
+			else if(m_currentGameState == GameState::GamePlay)
+				m_pBullet->Fire(m_pPlayer->GetDistance(), m_pPlayer->GetLane());
+			break;
 		case '1':
 			m_pAudio->PlayEventSound();
 			break;
@@ -559,16 +653,32 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
 			m_pAudio->PlayEventSound();
 			break; 
 		case VK_RIGHT:
-			m_pPlayer->MovePlayer(PlayerLane::Right);
+			m_pPlayer->MovePlayer(Lane::Right);
 			break;
 		case VK_LEFT:
-			m_pPlayer->MovePlayer(PlayerLane::Left);
+			m_pPlayer->MovePlayer(Lane::Left);
+			break;
+		case VK_UP:
+			if(m_currentGameState == GameState::Menu)
+				m_menuPlaySelected =true;
+			break;
+		case VK_DOWN:
+			if (m_currentGameState == GameState::Menu)
+				m_menuPlaySelected = false;
+			break;
+		case 'W':
+			if (m_currentGameState == GameState::Menu)
+				m_menuPlaySelected = true;
+			break;
+		case 'S':
+			if (m_currentGameState == GameState::Menu)
+				m_menuPlaySelected = false;
 			break;
 		case 'D':
-			m_pPlayer->MovePlayer(PlayerLane::Right);
+			m_pPlayer->MovePlayer(Lane::Right);
 			break;
 		case 'A':
-			m_pPlayer->MovePlayer(PlayerLane::Left);
+			m_pPlayer->MovePlayer(Lane::Left);
 			break;
 		case 'C':
 			ChangeCameraAngle();

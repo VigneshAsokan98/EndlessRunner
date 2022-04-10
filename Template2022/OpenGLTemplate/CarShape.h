@@ -8,12 +8,12 @@ public:
 	CCarShape();
 	~CCarShape();
 
-	void Initialise();
 	void Render();
 	void CreateCar();
 	void Release();
 private:
 
+	void Initialise();
 	void CreateVBO(vector<glm::vec3> points, vector<glm::vec2> texCoord);
 
 	CTexture m_BodyTexture;

@@ -17,15 +17,18 @@ public:
 	void CreateOffsetCurves();
 	void RenderOffsetCurves();
 
+	void CreateFenceCurves(string _texturefile);
+	void RenderFences();
+
 	void CreateTrack();
 	void RenderTrack();
 
 	void CreateVBO(vector<glm::vec3> points);
-	void CreatetrackVBO(vector<glm::vec3> points);
+	void CreatetrackVBO(vector<glm::vec3> points,float texdistance);
 
 	int CurrentLap(float d); // Return the currvent lap (starting from 0) based on distance along the control curve.
 
-	bool Sample(float d, glm::vec3 &p, float lane, glm::vec3 &up = _dummy_vector); // Return a point on the centreline based on a certain distance along the control curve.
+	bool Sample(float d, glm::vec3 &p, glm::vec3 &up = _dummy_vector); // Return a point on the centreline based on a certain distance along the control curve.
 
 private:
 
@@ -37,10 +40,13 @@ private:
 
 	vector<float> m_distances;
 	CTexture m_texture;
+	CTexture m_FenceTexture;
 
 	GLuint m_vaoCentreline;
 	GLuint m_vaoLeftOffsetCurve;
 	GLuint m_vaoRightOffsetCurve;
+	GLuint m_vaoLeftFenceCurve;
+	GLuint m_vaoRightFenceCurve;
 
 
 	GLuint m_vaoLeftBarrierCurve;
@@ -55,6 +61,8 @@ private:
 
 	vector<glm::vec3> m_leftOffsetPoints;			// Left offset curve points
 	vector<glm::vec3> m_rightOffsetPoints;			// Right offset curve points
+	vector<glm::vec3> m_leftFencePoints;			// Left offset curve points
+	vector<glm::vec3> m_rightFencePoints;			// Right offset curve points
 
 
 	unsigned int m_vertexCount;						// Number of vertices in the track VBO

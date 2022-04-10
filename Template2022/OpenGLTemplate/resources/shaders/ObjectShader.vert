@@ -23,10 +23,28 @@ out vec2 vTexCoord;	// Texture coordinate
 //Reflection Direction to Fragment shader
 out vec3 ReflectDirection;
 
+struct PositionLightInfo {
+  vec4 Position;  // Light position in eye coords.
+  vec3 Intensity; // Light intensity
+};
+uniform PositionLightInfo Positionlight[2];
 
 out vec4 p;
 out vec3 n;
 out vec3 reflected;
+
+vec3 ADS(PositionLightInfo light, vec3 position, vec3 norm)
+{
+	vec3 s= normalize(light.Position.xyz - position);
+	vec3 v = normalize(-position);
+	vec3 r = reflect( -s, norm );
+	vec3 I = light.Intensity;
+	return
+        I * ( .5 +
+        .5 * max( dot(s, norm), 0.0 ) +
+        .5 * pow( max( dot(r,v), 0.0 ), 15 ) );
+		
+}
 
 // This is the entry point into the vertex shader
 void main()
@@ -40,6 +58,12 @@ void main()
 	n = normalize(matrices.normalMatrix * inNormal);
 	p = matrices.modelViewMatrix * vec4(inPosition, 1.0f);
 	
+	// Evaluate the lighting equation for each Postionlight
+	vec3 plColor = vec3(0.0);
+	for( int i = 0; i < 2; i++ )
+		plColor += ADS( Positionlight[i], p.xyz, n );
+	vColour = plColor;
+
 	ReflectDirection = (matrices.inverseViewMatrix * vec4(reflect(p.xyz, n), 1)).xyz;
 	// Pass through the texture coordinate
 	vTexCoord = inCoord;

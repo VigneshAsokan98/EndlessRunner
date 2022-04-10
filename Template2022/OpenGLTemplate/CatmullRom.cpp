@@ -31,14 +31,15 @@ glm::vec3 CCatmullRom::Interpolate(glm::vec3 &p0, glm::vec3 &p1, glm::vec3 &p2, 
 void CCatmullRom::SetControlPoints()
 {
 	// Set control points (m_controlPoints) here, or load from disk
-	m_controlPoints.push_back(glm::vec3(100, 5, 0));
-	m_controlPoints.push_back(glm::vec3(71, 5, 71));
-	m_controlPoints.push_back(glm::vec3(0, 5, 100));
-	m_controlPoints.push_back(glm::vec3(-71, 5, 71));
-	m_controlPoints.push_back(glm::vec3(-100, 5, 0));
-	m_controlPoints.push_back(glm::vec3(-71, 5, -71));
-	m_controlPoints.push_back(glm::vec3(0, 5, -100));
-	m_controlPoints.push_back(glm::vec3(71, 5, -71));
+
+	m_controlPoints.push_back(glm::vec3(370, -120, 100));
+	m_controlPoints.push_back(glm::vec3(270, -80, 275));
+	m_controlPoints.push_back(glm::vec3(10, -50, 250));
+	m_controlPoints.push_back(glm::vec3(-100, -25, 150));
+	m_controlPoints.push_back(glm::vec3(-230, 103, -350));
+	m_controlPoints.push_back(glm::vec3(0, -25, -415));
+	m_controlPoints.push_back(glm::vec3(120, -70, -300));
+	m_controlPoints.push_back(glm::vec3(290, -100, -140));
 	
 
 	// Optionally, set upvectors (m_controlUpVectors, one for each control point as well)s	
@@ -64,7 +65,7 @@ void CCatmullRom::ComputeLengthsAlongControlPoints()
 
 
 // Return the point (and upvector, if control upvectors provided) based on a distance d along the control polygon
-bool CCatmullRom::Sample(float d, glm::vec3 &p, float lane, glm::vec3 &up)
+bool CCatmullRom::Sample(float d, glm::vec3 &p, glm::vec3 &up)
 {
 	if (d < 0)
 		return false;
@@ -105,7 +106,7 @@ bool CCatmullRom::Sample(float d, glm::vec3 &p, float lane, glm::vec3 &up)
 	glm::vec3 N = glm::cross(T, glm::vec3(0.f, 1, 0.f));
 
 	// Interpolate to get the point (and upvector)
-	p = Interpolate(m_controlPoints[iPrev], m_controlPoints[iCur], m_controlPoints[iNext], m_controlPoints[iNextNext], t) + lane * (30 / 3) * N;
+	p = Interpolate(m_controlPoints[iPrev], m_controlPoints[iCur], m_controlPoints[iNext], m_controlPoints[iNextNext], t);
 	if (m_controlUpVectors.size() == m_controlPoints.size())
 		up = glm::normalize(Interpolate(m_controlUpVectors[iPrev], m_controlUpVectors[iCur], m_controlUpVectors[iNext], m_controlUpVectors[iNextNext], t));
 
@@ -128,7 +129,7 @@ void CCatmullRom::UniformlySampleControlPoints(int numSamples)
 
 	// Call PointAt to sample the spline, to generate the points
 	for (int i = 0; i < numSamples; i++) {
-		Sample(i * fSpacing, p, 0.f, up);
+		Sample(i * fSpacing, p, up);
 		m_centrelinePoints.push_back(p);
 		if (m_controlUpVectors.size() > 0)
 			m_centrelineUpVectors.push_back(up);
@@ -146,7 +147,7 @@ void CCatmullRom::UniformlySampleControlPoints(int numSamples)
 	fTotalLength = m_distances[m_distances.size() - 1];
 	fSpacing = fTotalLength / numSamples;
 	for (int i = 0; i < numSamples; i++) {
-		Sample(i * fSpacing, p, 0.f, up);
+		Sample(i * fSpacing, p, up);
 		m_centrelinePoints.push_back(p);
 		if (m_controlUpVectors.size() > 0)
 			m_centrelineUpVectors.push_back(up);
@@ -253,10 +254,10 @@ void CCatmullRom::CreateTrack()
 		trianglePoints.push_back(m_leftOffsetPoints[i]);
 		trianglePoints.push_back(m_rightOffsetPoints[i]);
 	}
-	CreatetrackVBO(trianglePoints);
+	CreatetrackVBO(trianglePoints, 0.01f);
 }
 
-void CCatmullRom::CreatetrackVBO(vector<glm::vec3> points)
+void CCatmullRom::CreatetrackVBO(vector<glm::vec3> points, float texdistance)
 {
 	// Create a VBO
 	CVertexBufferObject vbo;
@@ -273,7 +274,7 @@ void CCatmullRom::CreatetrackVBO(vector<glm::vec3> points)
 		vbo.AddData(&texCoord, sizeof(glm::vec2));
 		vbo.AddData(&normal, sizeof(glm::vec3));
 		if(i % 2)
-			dis += 0.01;
+			dis += texdistance;
 	}
 	// Upload the VBO to the GPU
 	vbo.UploadDataToGPU(GL_STATIC_DRAW);
@@ -301,6 +302,70 @@ void CCatmullRom::RenderCentreline()
 	glDrawArrays(GL_LINE_STRIP, 0, 500);
 }
 
+void CCatmullRom::CreateFenceCurves(string _texturefile)
+{
+
+	m_FenceTexture.Load(_texturefile);
+	m_FenceTexture.SetSamplerObjectParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	m_FenceTexture.SetSamplerObjectParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	m_FenceTexture.SetSamplerObjectParameter(GL_TEXTURE_WRAP_S, GL_REPEAT);
+	m_FenceTexture.SetSamplerObjectParameter(GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// Compute the offset curves, one left, and one right.  Store the points in m_leftFencePoints and m_rightFencePoints respectively
+
+	float w = 8; 
+	for (int i = 0; i < m_leftOffsetPoints.size(); i++)
+	{
+		glm::vec3 Rp, RpNext,Lp,LpNext;
+		Rp = m_rightOffsetPoints[i];
+		Lp = m_leftOffsetPoints[i];
+		int nextidx = (i + 1) % m_rightOffsetPoints.size();
+		RpNext = m_rightOffsetPoints[nextidx];
+		LpNext = m_leftOffsetPoints[nextidx];
+		
+		//Left Fence Points
+		glm::vec3 T = glm::normalize(LpNext - Lp);
+		glm::vec3 N = glm::cross(T, glm::vec3(0.f, 1.f, 0.f));
+		glm::vec3 B = glm::normalize(glm::cross(N, T));
+		glm::vec3 l = Lp + (w / 2) * B;
+
+		//Right Fence Points 
+		T = glm::normalize(RpNext - Rp);
+		N = glm::cross(T, glm::vec3(0.f, 1, 0.f));
+		B = glm::normalize(glm::cross(N, T));
+		glm::vec3 r = Rp + (w / 2) * B;
+
+
+		m_leftFencePoints.push_back(l);
+		m_leftFencePoints.push_back(m_leftOffsetPoints[i]);
+
+		m_rightFencePoints.push_back(m_rightOffsetPoints[i]);
+		m_rightFencePoints.push_back(r);
+	}
+
+	// Generate two VAOs called m_vaoLeftOffsetCurve and m_vaoRightOffsetCurve, each with a VBO, and get the offset curve points on the graphics card
+	// Note it is possible to only use one VAO / VBO with all the points instead.
+	glGenVertexArrays(1, &m_vaoLeftFenceCurve);
+	glBindVertexArray(m_vaoLeftFenceCurve);
+
+	CreatetrackVBO(m_leftFencePoints, 0.1f);
+
+	glGenVertexArrays(1, &m_vaoRightFenceCurve);
+	glBindVertexArray(m_vaoRightFenceCurve);
+
+	CreatetrackVBO(m_rightFencePoints, 0.1f);
+}
+void CCatmullRom::RenderFences()
+{
+	m_FenceTexture.Bind();
+	glLineWidth(5.0f);
+	glBindVertexArray(m_vaoRightFenceCurve);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 1000);
+
+
+	glLineWidth(5.0f);
+	glBindVertexArray(m_vaoLeftFenceCurve);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 1000);
+}
 void CCatmullRom::RenderOffsetCurves()
 {
 	// Bind the VAO m_vaoLeftOffsetCurve and render it

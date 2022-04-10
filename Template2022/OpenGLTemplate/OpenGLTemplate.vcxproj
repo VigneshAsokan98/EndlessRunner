@@ -124,11 +124,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Audio.h" />
+    <ClInclude Include="Bullet.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CarShape.h" />
     <ClInclude Include="CatmullRom.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Cubemap.h" />
+    <ClInclude Include="Enemy.h" />
+    <ClInclude Include="EnemyManager.h" />
     <ClInclude Include="FaceVertexMesh.h" />
     <ClInclude Include="FreeTypeFont.h" />
     <ClInclude Include="Game.h" />
@@ -149,10 +152,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="Bullet.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CarShape.cpp" />
     <ClCompile Include="CatmullRom.cpp" />
     <ClCompile Include="Cubemap.cpp" />
+    <ClCompile Include="Enemy.cpp" />
+    <ClCompile Include="EnemyManager.cpp" />
     <ClCompile Include="FaceVertexMesh.cpp" />
     <ClCompile Include="FreeTypeFont.cpp" />
     <ClCompile Include="Game.cpp" />

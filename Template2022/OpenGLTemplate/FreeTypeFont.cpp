@@ -120,7 +120,7 @@ bool CFreeTypeFont::LoadSystemFont(string name, int ipixelSize)
 	sPath += "\\Fonts\\";
 	sPath += name;
 
-	return LoadFont(sPath, ipixelSize);
+	return LoadFont(name, ipixelSize);
 }
 
 
